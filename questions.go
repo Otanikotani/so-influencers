@@ -24,8 +24,8 @@ type Question struct {
 	ViewCount        int         `json:"view_count"`
 	AnswerCount      int         `json:"answer_count"`
 	Score            int         `json:"score"`
-	LastActivityDate int64       `json:"last_activity_date"`
-	CreationDate     int64       `json:"creation_date"`
+	LastActivityDate int         `json:"last_activity_date"`
+	CreationDate     int         `json:"creation_date"`
 	Link             string      `json:"link"`
 	Owner            ShallowUser `json:"owner"`
 	Answers          []Answer    `json:"answers"`
@@ -43,7 +43,7 @@ type ShallowUser struct {
 type Answer struct {
 	AnswerID     int         `json:"answer_id"`
 	Title        string      `json:"title"`
-	CreationDate int64       `json:"creation_date"`
+	CreationDate int         `json:"creation_date"`
 	IsAccepted   bool        `json:"is_accepted"`
 	Owner        ShallowUser `json:"owner"`
 	Score        int         `json:"score"`

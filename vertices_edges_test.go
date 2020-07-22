@@ -89,12 +89,12 @@ func TestQuestionConversion(t *testing.T) {
 		t.Errorf("Expected %d rows, but got %d", 3, len(result))
 	}
 	assert.Equal(t,
-		[]string{"~id", "~label", "title:String", "viewCount:Int", "answerCount:Int", "score:Int", "isAnswered:Bool", "creationDate:Date"},
+		[]string{"~id", "~label", "title:String", "viewCount:Int", "answerCount:Int", "score:Int", "isAnswered:Bool", "creationDate:Int"},
 		result[0],
 		"Invalid header")
 	assert.Contains(t,
 		result,
-		[]string{"q62682939", "Question", "", "22", "2", "202", "true", "2020-07-01T14:10:36"},
+		[]string{"q62682939", "Question", "", "22", "2", "202", "true", "1593627036"},
 		"Can't find expected question record")
 }
 
@@ -104,12 +104,12 @@ func TestAnswerConversion(t *testing.T) {
 	if len(result) != 4 {
 		t.Errorf("Expected %d rows, but got %d", 4, len(result))
 	}
-	assert.Equal(t, []string{"~id", "~label", "title:String", "accepted:Bool", "score:Int", "creationDate:Date"},
+	assert.Equal(t, []string{"~id", "~label", "title:String", "accepted:Bool", "score:Int", "creationDate:Int"},
 		result[0],
 		"Invalid header")
 	assert.Contains(t,
 		result,
-		[]string{"a62683507", "Answer", "Serverless solution for long running query on AWS", "false", "0", "2020-07-01T14:47:39"},
+		[]string{"a62683507", "Answer", "Serverless solution for long running query on AWS", "false", "0", "1593629259"},
 		"Can't find expected answer record")
 }
 

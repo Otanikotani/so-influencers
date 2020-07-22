@@ -2,7 +2,6 @@ package main
 
 import (
 	"strconv"
-	"time"
 )
 
 func questionCsv(question *Question) []string {
@@ -14,7 +13,7 @@ func questionCsv(question *Question) []string {
 		strconv.Itoa(question.AnswerCount),
 		strconv.Itoa(question.Score),
 		strconv.FormatBool(question.IsAnswered),
-		neptuneDate(question.CreationDate),
+		strconv.Itoa(question.CreationDate),
 	}
 }
 
@@ -25,7 +24,7 @@ func answerCsv(answer *Answer) []string {
 		answer.Title,
 		strconv.FormatBool(answer.IsAccepted),
 		strconv.Itoa(answer.Score),
-		neptuneDate(answer.CreationDate),
+		strconv.Itoa(answer.CreationDate),
 	}
 }
 
@@ -50,14 +49,9 @@ func questionVerticeID(question *Question) string {
 	return "q" + strconv.Itoa(question.QuestionID)
 }
 
-func neptuneDate(timestamp int64) string {
-	unixDate := time.Unix(timestamp, 0)
-	return unixDate.Format("2006-01-02T15:04:05") //YYYY-MM-DDTHH:mm:SS
-}
-
 func questionVertices(questions *[]Question) [][]string {
 	var questionVertices [][]string
-	questionVerticesHeader := []string{"~id", "~label", "title:String", "viewCount:Int", "answerCount:Int", "score:Int", "isAnswered:Bool", "creationDate:Date"}
+	questionVerticesHeader := []string{"~id", "~label", "title:String", "viewCount:Int", "answerCount:Int", "score:Int", "isAnswered:Bool", "creationDate:Int"}
 	questionVertices = append(questionVertices, questionVerticesHeader)
 
 	for _, question := range *questions {
@@ -69,7 +63,7 @@ func questionVertices(questions *[]Question) [][]string {
 
 func answerVertices(questions *[]Question) [][]string {
 	var answerVertices [][]string
-	answerVerticesHeader := []string{"~id", "~label", "title:String", "accepted:Bool", "score:Int", "creationDate:Date"}
+	answerVerticesHeader := []string{"~id", "~label", "title:String", "accepted:Bool", "score:Int", "creationDate:Int"}
 	answerVertices = append(answerVertices, answerVerticesHeader)
 
 	for _, question := range *questions {
