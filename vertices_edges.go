@@ -7,7 +7,7 @@ import (
 
 func questionCsv(question *Question) []string {
 	return []string{
-		questionVerticeId(question),
+		questionVerticeID(question),
 		"Question",
 		question.Title,
 		strconv.Itoa(question.ViewCount),
@@ -20,7 +20,7 @@ func questionCsv(question *Question) []string {
 
 func answerCsv(answer *Answer) []string {
 	return []string{
-		answerVerticeId(answer),
+		answerVerticeID(answer),
 		"Answer",
 		answer.Title,
 		strconv.FormatBool(answer.IsAccepted),
@@ -31,23 +31,23 @@ func answerCsv(answer *Answer) []string {
 
 func shallowUserCsv(shallowUser *ShallowUser) []string {
 	return []string{
-		shallowUserVerticeId(shallowUser),
+		shallowUserVerticeID(shallowUser),
 		"Person",
 		shallowUser.DisplayName,
 		strconv.Itoa(shallowUser.Reputation),
 	}
 }
 
-func shallowUserVerticeId(shallowUser *ShallowUser) string {
-	return "u" + strconv.Itoa(shallowUser.UserId)
+func shallowUserVerticeID(shallowUser *ShallowUser) string {
+	return "u" + strconv.Itoa(shallowUser.UserID)
 }
 
-func answerVerticeId(answer *Answer) string {
-	return "a" + strconv.Itoa(answer.AnswerId)
+func answerVerticeID(answer *Answer) string {
+	return "a" + strconv.Itoa(answer.AnswerID)
 }
 
-func questionVerticeId(question *Question) string {
-	return "q" + strconv.Itoa(question.QuestionId)
+func questionVerticeID(question *Question) string {
+	return "q" + strconv.Itoa(question.QuestionID)
 }
 
 func neptuneDate(timestamp int64) string {
@@ -89,9 +89,9 @@ func peopleVertices(questions *[]Question) [][]string {
 	peopleByIds := make(map[int]ShallowUser)
 
 	for _, question := range *questions {
-		peopleByIds[question.Owner.UserId] = question.Owner
+		peopleByIds[question.Owner.UserID] = question.Owner
 		for _, answer := range question.Answers {
-			peopleByIds[answer.Owner.UserId] = answer.Owner
+			peopleByIds[answer.Owner.UserID] = answer.Owner
 		}
 	}
 
@@ -111,14 +111,14 @@ func edges(questions *[]Question) [][]string {
 
 	for _, question := range *questions {
 		edgeCount++
-		edgeId := "e" + strconv.Itoa(edgeCount)
-		askedEdge := []string{edgeId, shallowUserVerticeId(&question.Owner), questionVerticeId(&question), "Asked"}
+		edgeID := "e" + strconv.Itoa(edgeCount)
+		askedEdge := []string{edgeID, shallowUserVerticeID(&question.Owner), questionVerticeID(&question), "Asked"}
 		edges = append(edges, askedEdge)
 
 		for _, answer := range question.Answers {
 			edgeCount++
-			edgeId := "e" + strconv.Itoa(edgeCount)
-			answerEdge := []string{edgeId, shallowUserVerticeId(&answer.Owner), answerVerticeId(&answer), "Answered"}
+			edgeID := "e" + strconv.Itoa(edgeCount)
+			answerEdge := []string{edgeID, shallowUserVerticeID(&answer.Owner), answerVerticeID(&answer), "Answered"}
 			edges = append(edges, answerEdge)
 		}
 	}

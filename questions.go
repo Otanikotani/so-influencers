@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+//Questions from Stack Overflow with paging
 type Questions struct {
 	Items          []Question `json:"items"`
 	HasMore        bool       `json:"has_more"`
@@ -15,34 +16,37 @@ type Questions struct {
 	QuotaRemaining int        `json:"quota_remaining"`
 }
 
+//Question describes a question asked in SO, the fields we are interested in only.
 type Question struct {
+	QuestionID       int         `json:"question_id"`
+	Title            string      `json:"title"`
 	IsAnswered       bool        `json:"is_answered"`
 	ViewCount        int         `json:"view_count"`
 	AnswerCount      int         `json:"answer_count"`
 	Score            int         `json:"score"`
 	LastActivityDate int64       `json:"last_activity_date"`
 	CreationDate     int64       `json:"creation_date"`
-	QuestionId       int         `json:"question_id"`
 	Link             string      `json:"link"`
-	Title            string      `json:"title"`
 	Owner            ShallowUser `json:"owner"`
 	Answers          []Answer    `json:"answers"`
 }
 
+//ShallowUser brief info on a SO user
 type ShallowUser struct {
+	UserID      int    `json:"user_id"`
 	Reputation  int    `json:"reputation"`
-	UserId      int    `json:"user_id"`
 	DisplayName string `json:"display_name"`
 	Link        string `json:"link"`
 }
 
+//Answer describes answer to an SO question
 type Answer struct {
-	AnswerId     int         `json:"answer_id"`
+	AnswerID     int         `json:"answer_id"`
+	Title        string      `json:"title"`
 	CreationDate int64       `json:"creation_date"`
 	IsAccepted   bool        `json:"is_accepted"`
 	Owner        ShallowUser `json:"owner"`
 	Score        int         `json:"score"`
-	Title        string      `json:"title"`
 }
 
 func getQuestions(accessToken string, key string) (*[]Question, error) {
@@ -57,7 +61,7 @@ func getQuestions(accessToken string, key string) (*[]Question, error) {
 		log.Printf("Received page %d with %d items. Quota max: %d, remaining: %d\n",
 			page, len(questionsPage.Items), questionsPage.QuotaMax, questionsPage.QuotaRemaining)
 		result = append(result, questionsPage.Items...)
-		page += 1
+		page++
 		hasMore = questionsPage.HasMore
 		if questionsPage.QuotaRemaining <= 0 {
 			fmt.Printf("Quota exceeded after retrieving %d items\n", len(result))

@@ -1,87 +1,80 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
-	"encoding/json"
-	"github.com/jessevdk/go-flags"
-	"io/ioutil"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"log"
 	"os"
-
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type opts struct {
-	StackExchangeAccessToken string `long:"access-token" env:"STACK_EXCHANGE_ACCESS_TOKEN" description:"Stack Exchange Access Token, obtainable through OAuth2, see https://api.stackexchange.com/docs/authentication"`
-	StackExchangeKey         string `long:"key" env:"STACK_EXCHANGE_KEY" description:"Stack Exchange Application Key, if you don't have a request key you can obtain one by registering your application on Stack Apps."`
-}
-
 func main() {
-	if len(os.Args) == 0 {
-		lambda.Start(handleRequest)
-	}
-
-	var opts opts
-	if _, err := flags.Parse(&opts); err != nil {
-		os.Exit(1)
-	}
-
-	questionsToLocalFiles(opts)
+	lambda.Start(handleRequest)
 }
 
-func questionsToLocalFiles(opts opts) {
-	questions, err := getQuestions(opts.StackExchangeAccessToken, opts.StackExchangeKey)
-	if err != nil {
-		log.Fatal(err)
+func handleRequest() {
+	accessToken, ok := os.LookupEnv("STACK_EXCHANGE_ACCESS_TOKEN")
+	if !ok {
+		log.Fatalf("STACK_EXCHANGE_ACCESS_TOKEN env variable is not set")
+	}
+	key, ok := os.LookupEnv("STACK_EXCHANGE_KEY")
+	if !ok {
+		log.Fatalf("STACK_EXCHANGE_KEY env variable is not set")
+	}
+	s3Region, ok := os.LookupEnv("REGION")
+	if !ok {
+		log.Println("REGION env variable is not set, using default region us-east-1")
+		s3Region = "us-east-1"
+	}
+	s3Bucket, ok := os.LookupEnv("BUCKET")
+	if !ok {
+		log.Fatalf("BUCKET env variable is not set")
 	}
 
-	questionsJson, err := json.Marshal(questions)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = ioutil.WriteFile("output.json", questionsJson, 0644)
+	questions, err := getQuestions(accessToken, key)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	questionVertices, answerVertices, peopleVertices, edges := toVerticesAndEdges(questions)
 
-	err = writeToLocalFile(questionVertices, "question_vertices.csv")
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(s3Region)})
 	if err != nil {
-		log.Fatal("Cannot create file", err)
+		log.Fatal(err)
 	}
-	log.Printf("Written %v\n", "question_vertices.csv")
 
-	err = writeToLocalFile(answerVertices, "answer_vertices.csv")
+	uploadResult, err := writeToS3(questionVertices, "questions.csv", sess, s3Bucket)
 	if err != nil {
-		log.Fatal("Cannot create file", err)
+		log.Fatalf("Failed to upload questions: %v", err)
 	}
-	log.Printf("Written %v\n", "answer_vertices.csv")
+	log.Printf("Questions successfully uploaded! Location: %v, version: %v, upload: %v\n", uploadResult.Location, uploadResult.VersionID, uploadResult.UploadID)
 
-	err = writeToLocalFile(peopleVertices, "people_vertices.csv")
+	uploadResult, err = writeToS3(answerVertices, "answers.csv", sess, s3Bucket)
 	if err != nil {
-		log.Fatal("Cannot create file", err)
+		log.Fatalf("Failed to upload answers: %v", err)
 	}
-	log.Printf("Written %v\n", "people_vertices.csv")
+	log.Printf("Answers successfully uploaded! Location: %v, version: %v, upload: %v\n", uploadResult.Location, uploadResult.VersionID, uploadResult.UploadID)
 
-	err = writeToLocalFile(edges, "edges.csv")
+	uploadResult, err = writeToS3(peopleVertices, "people.csv", sess, s3Bucket)
 	if err != nil {
-		log.Fatal("Cannot create file", err)
+		log.Fatalf("Failed to upload people: %v", err)
 	}
-	log.Printf("Written %v\n", "edges.csv")
+	log.Printf("People successfully uploaded! Location: %v, version: %v, upload: %v\n", uploadResult.Location, uploadResult.VersionID, uploadResult.UploadID)
 
+	uploadResult, err = writeToS3(edges, "edges.csv", sess, s3Bucket)
+	if err != nil {
+		log.Fatalf("Failed to upload edges: %v", err)
+	}
+	log.Printf("Eges successfully uploaded! Location: %v, version: %v, upload: %v\n", uploadResult.Location, uploadResult.VersionID, uploadResult.UploadID)
 }
 
-func writeToLocalFile(records [][]string, fileName string) error {
-	log.Printf("Write %d records, file name: %v\n", len(records), fileName)
-
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
+func writeToS3(records [][]string, key string, sess *session.Session, bucket string) (*s3manager.UploadOutput, error) {
+	log.Printf("Write %d records, key: %v, bucket: %v\n", len(records), key, bucket)
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
 	defer writer.Flush()
 
 	for _, record := range records {
@@ -90,5 +83,12 @@ func writeToLocalFile(records [][]string, fileName string) error {
 			log.Fatalf("Failed to write record %v. Err: %v\n", record, err.Error())
 		}
 	}
-	return nil
+	uploader := s3manager.NewUploader(sess)
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Body:   bytes.NewReader(buf.Bytes()),
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+
+	return result, err
 }
